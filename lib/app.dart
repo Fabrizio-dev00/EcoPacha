@@ -7,13 +7,16 @@ import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'models/mascot_progress.dart';
 import 'providers/auth_provider.dart';
+import 'providers/leaderboard_provider.dart';
 import 'providers/mascot_provider.dart';
 import 'providers/recycling_provider.dart';
 import 'providers/user_progress_provider.dart';
 import 'services/auth_service.dart';
 import 'services/chatbot_service.dart';
 import 'services/demo_classifier_service.dart';
+import 'services/firestore_service.dart';
 import 'services/local_keyword_chatbot_service.dart';
+import 'services/mock_firestore_service.dart';
 import 'services/storage_service.dart';
 
 /// Raíz de la aplicación EcoPacha.
@@ -63,6 +66,13 @@ class _EcoPachaAppState extends State<EcoPachaApp> {
         ),
         Provider<ChatbotService>(
           create: (_) => LocalKeywordChatbotService(),
+        ),
+        Provider<FirestoreService>(
+          create: (_) => MockFirestoreService(),
+        ),
+        ChangeNotifierProvider<LeaderboardProvider>(
+          create: (context) =>
+              LeaderboardProvider(context.read<FirestoreService>()),
         ),
       ],
       child: MaterialApp.router(
