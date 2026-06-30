@@ -1,8 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
 import 'app.dart';
+import 'providers/auth_provider.dart';
+import 'services/local_auth_service.dart';
+import 'services/storage_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,5 +14,11 @@ Future<void> main() async {
   Intl.defaultLocale = 'es';
   await initializeDateFormatting('es', null);
 
-  runApp(const EcoPachaApp());
+  // Capa de datos local y autenticación (se reemplazará por Firebase en Fase 8).
+  final storage = await StorageService.create();
+  final authService = LocalAuthService(storage);
+  final authProvider = AuthProvider(authService);
+  await authProvider.init();
+
+  runApp(EcoPachaApp(authProvider: authProvider));
 }
