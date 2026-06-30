@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import 'core/constants/app_strings.dart';
 import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'models/mascot_progress.dart';
 import 'providers/auth_provider.dart';
+import 'providers/mascot_provider.dart';
 import 'providers/recycling_provider.dart';
 import 'providers/user_progress_provider.dart';
 import 'services/auth_service.dart';
@@ -50,6 +52,11 @@ class _EcoPachaAppState extends State<EcoPachaApp> {
                 .syncWithAuth(auth.user, auth.isAuthenticated);
             return progress;
           },
+        ),
+        // Lumi se deriva del progreso (sin estado propio).
+        ProxyProvider<UserProgressProvider, MascotProgress>(
+          update: (_, progress, _) =>
+              MascotProvider.fromUserProgress(progress),
         ),
         ChangeNotifierProvider<RecyclingProvider>(
           create: (_) => RecyclingProvider(DemoClassifierService()),
