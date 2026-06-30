@@ -6,13 +6,23 @@ import 'core/constants/app_strings.dart';
 import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
+import 'providers/user_progress_provider.dart';
+import 'services/auth_service.dart';
+import 'services/storage_service.dart';
 
 /// Raíz de la aplicación EcoPacha.
 /// Registra los providers globales y construye el router una sola vez.
 class EcoPachaApp extends StatefulWidget {
+  final StorageService storage;
+  final AuthService authService;
   final AuthProvider authProvider;
 
-  const EcoPachaApp({super.key, required this.authProvider});
+  const EcoPachaApp({
+    super.key,
+    required this.storage,
+    required this.authService,
+    required this.authProvider,
+  });
 
   @override
   State<EcoPachaApp> createState() => _EcoPachaAppState();
@@ -26,6 +36,17 @@ class _EcoPachaAppState extends State<EcoPachaApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthProvider>.value(value: widget.authProvider),
+        // El progreso depende de la sesión: se carga al autenticar y se limpia al salir.
+        ChangeNotifierProxyProvider<AuthProvider, UserProgressProvider>(
+          create: (_) =>
+              UserProgressProvider(widget.storage, widget.authService),
+          update: (_, auth, progress) {
+            (progress ??=
+                    UserProgressProvider(widget.storage, widget.authService))
+                .syncWithAuth(auth.user, auth.isAuthenticated);
+            return progress;
+          },
+        ),
       ],
       child: MaterialApp.router(
         title: AppStrings.appName,

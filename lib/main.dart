@@ -20,5 +20,9 @@ Future<void> main() async {
   final authProvider = AuthProvider(authService);
   await authProvider.init();
 
-  runApp(EcoPachaApp(authProvider: authProvider));
+  runApp(EcoPachaApp(
+    storage: storage,
+    authService: authService,
+    authProvider: authProvider,
+  ));
 }

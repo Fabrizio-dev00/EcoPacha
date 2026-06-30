@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/user_progress_provider.dart';
+import '../../widgets/challenge_card.dart';
+import '../../widgets/eco_points_card.dart';
+import '../../widgets/impact_card.dart';
+import '../../widgets/lumi_message_card.dart';
 
-/// Pantalla de Inicio (dashboard). En la Fase 3 se conectará a los providers
-/// para mostrar datos reales de EcoPuntos, retos e impacto.
+/// Pantalla de Inicio (dashboard). Lee el progreso vivo de [UserProgressProvider].
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final progress = context.watch<UserProgressProvider>();
+    final auth = context.watch<AuthProvider>();
+    final firstName = _firstName(auth.user?.name);
+    final daily = progress.dailyChallenge;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.appName),
@@ -32,9 +43,9 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           Text(
-            '¡Hola! 👋',
-            style:
-                theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            '¡Hola, $firstName! 👋',
+            style: theme.textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
@@ -43,149 +54,71 @@ class HomeScreen extends StatelessWidget {
                 ?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
-          const _EcoPointsBanner(),
-          const SizedBox(height: 16),
-          const _QuickScanCard(),
-          const SizedBox(height: 16),
-          const _LumiCard(),
-        ],
-      ),
-    );
-  }
-}
-
-class _EcoPointsBanner extends StatelessWidget {
-  const _EcoPointsBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.turquoise],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Tus EcoPuntos',
-                    style: TextStyle(color: Colors.white70, fontSize: 14)),
-                SizedBox(height: 4),
-                Text('0',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold)),
-                Text('Nivel 1 · Racha 0 días',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
-              ],
-            ),
+          EcoPointsCard(
+            ecoPoints: progress.ecoPoints,
+            level: progress.level,
+            streakDays: progress.streakDays,
+            levelProgress: progress.levelProgress,
+            pointsToNextLevel: progress.pointsToNextLevel,
           ),
-          Container(
-            height: 64,
-            width: 64,
-            decoration:
-                const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-            child: const Icon(Icons.eco, color: Colors.white, size: 34),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickScanCard extends StatelessWidget {
-  const _QuickScanCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.camera_alt_rounded,
-                    color: AppColors.primary, size: 28),
-                const SizedBox(width: 10),
-                Text(
-                  'Escanea un residuo',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+          const SizedBox(height: 16),
+          const _QuickScanButton(),
+          const SizedBox(height: 20),
+          const _SectionTitle('Reto diario'),
+          const SizedBox(height: 8),
+          if (daily != null)
+            ChallengeCard(challenge: daily)
+          else
             Text(
-              'Toma o sube una foto y te diré cómo reciclarlo. ¡Suma EcoPuntos!',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: AppColors.textSecondary),
+              '¡Estás al día con tus retos! 🎉',
+              style: theme.textTheme.bodyMedium,
             ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => context.go('/scan'),
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Escanear ahora'),
-            ),
-          ],
-        ),
+          const SizedBox(height: 20),
+          const _SectionTitle('Tu impacto esta semana'),
+          const SizedBox(height: 8),
+          ImpactCard(impact: progress.weeklyImpact),
+          const SizedBox(height: 20),
+          LumiMessageCard(message: progress.lumiMessage),
+        ],
+      ),
+    );
+  }
+
+  String _firstName(String? name) {
+    if (name == null || name.trim().isEmpty) return 'Eco';
+    return name.trim().split(RegExp(r'\s+')).first;
+  }
+}
+
+class _QuickScanButton extends StatelessWidget {
+  const _QuickScanButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: () => context.go('/scan'),
+        icon: const Icon(Icons.qr_code_scanner),
+        label: const Text('Escanear un residuo'),
       ),
     );
   }
 }
 
-class _LumiCard extends StatelessWidget {
-  const _LumiCard();
+class _SectionTitle extends StatelessWidget {
+  final String title;
+
+  const _SectionTitle(this.title);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      color: AppColors.surfaceMuted,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              height: 52,
-              width: 52,
-              decoration: const BoxDecoration(
-                  color: AppColors.primaryLight, shape: BoxShape.circle),
-              child:
-                  const Icon(Icons.flutter_dash, color: AppColors.primaryDark),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppStrings.mascotName,
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    AppStrings.lumiWelcome,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return Text(
+      title,
+      style: Theme.of(context)
+          .textTheme
+          .titleMedium
+          ?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 }

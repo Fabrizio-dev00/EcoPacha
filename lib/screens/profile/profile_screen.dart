@@ -5,14 +5,17 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/utils/formatters.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/user_progress_provider.dart';
 
 /// Pantalla de perfil del usuario.
+/// Las cifras de progreso vienen de [UserProgressProvider] (fuente única).
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final progress = context.watch<UserProgressProvider>();
     final user = auth.user;
     final theme = Theme.of(context);
 
@@ -31,8 +34,10 @@ class ProfileScreen extends StatelessWidget {
               backgroundColor: AppColors.primaryLight,
               child: Text(
                 _initials(user.name),
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(color: AppColors.primaryDark, fontWeight: FontWeight.bold),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: AppColors.primaryDark,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -57,10 +62,28 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 18),
               child: Row(
                 children: [
-                  _Stat(label: AppStrings.ecoPoints, value: Formatters.points(user.ecoPoints)),
-                  _Stat(label: AppStrings.level, value: '${user.level}'),
-                  _Stat(label: AppStrings.streak, value: '${user.streakDays}'),
+                  _Stat(
+                    label: AppStrings.ecoPoints,
+                    value: Formatters.points(progress.ecoPoints),
+                  ),
+                  _Stat(label: AppStrings.level, value: '${progress.level}'),
+                  _Stat(
+                    label: AppStrings.streak,
+                    value: '${progress.streakDays}',
+                  ),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.recycling, color: AppColors.primary),
+              title: const Text('Residuos reciclados'),
+              trailing: Text(
+                '${progress.totalRecycledItems}',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -119,8 +142,10 @@ class _Stat extends StatelessWidget {
         children: [
           Text(
             value,
-            style: theme.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
