@@ -9,7 +9,9 @@ import 'providers/auth_provider.dart';
 import 'providers/recycling_provider.dart';
 import 'providers/user_progress_provider.dart';
 import 'services/auth_service.dart';
+import 'services/chatbot_service.dart';
 import 'services/demo_classifier_service.dart';
+import 'services/local_keyword_chatbot_service.dart';
 import 'services/storage_service.dart';
 
 /// Raíz de la aplicación EcoPacha.
@@ -51,6 +53,9 @@ class _EcoPachaAppState extends State<EcoPachaApp> {
         ),
         ChangeNotifierProvider<RecyclingProvider>(
           create: (_) => RecyclingProvider(DemoClassifierService()),
+        ),
+        Provider<ChatbotService>(
+          create: (_) => LocalKeywordChatbotService(),
         ),
       ],
       child: MaterialApp.router(
