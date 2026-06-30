@@ -6,8 +6,10 @@ import 'core/constants/app_strings.dart';
 import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
+import 'providers/recycling_provider.dart';
 import 'providers/user_progress_provider.dart';
 import 'services/auth_service.dart';
+import 'services/demo_classifier_service.dart';
 import 'services/storage_service.dart';
 
 /// Raíz de la aplicación EcoPacha.
@@ -46,6 +48,9 @@ class _EcoPachaAppState extends State<EcoPachaApp> {
                 .syncWithAuth(auth.user, auth.isAuthenticated);
             return progress;
           },
+        ),
+        ChangeNotifierProvider<RecyclingProvider>(
+          create: (_) => RecyclingProvider(DemoClassifierService()),
         ),
       ],
       child: MaterialApp.router(

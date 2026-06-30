@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>EcoPacha usa la cámara para que tomes una foto del residuo y poder clasificarlo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>EcoPacha accede a tus fotos para que subas una imagen del residuo y poder clasificarlo.</string>
 </dict>
 </plist>
