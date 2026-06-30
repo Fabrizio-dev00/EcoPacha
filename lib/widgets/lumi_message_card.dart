@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
 import '../core/constants/app_strings.dart';
+import 'lumi_avatar.dart';
 
 /// Tarjeta con la mascota Lumi y un mensaje motivador.
 class LumiMessageCard extends StatelessWidget {
@@ -21,12 +22,12 @@ class LumiMessageCard extends StatelessWidget {
             Container(
               height: 52,
               width: 52,
+              alignment: Alignment.center,
               decoration: const BoxDecoration(
-                color: AppColors.primaryLight,
+                color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child:
-                  const Icon(Icons.flutter_dash, color: AppColors.primaryDark),
+              child: const LumiAvatar(size: 44),
             ),
             const SizedBox(width: 14),
             Expanded(

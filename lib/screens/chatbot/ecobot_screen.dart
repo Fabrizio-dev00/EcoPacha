@@ -6,6 +6,7 @@ import '../../core/constants/app_strings.dart';
 import '../../models/challenge.dart';
 import '../../providers/user_progress_provider.dart';
 import '../../services/chatbot_service.dart';
+import '../../widgets/lumi_avatar.dart';
 
 /// Mensaje dentro del chat de EcoBot.
 class _ChatMessage {
@@ -164,9 +165,8 @@ class _Bubble extends StatelessWidget {
           if (!isUser) ...[
             const CircleAvatar(
               radius: 16,
-              backgroundColor: AppColors.primaryLight,
-              child: Icon(Icons.flutter_dash,
-                  size: 18, color: AppColors.primaryDark),
+              backgroundColor: Colors.white,
+              child: LumiAvatar(size: 26, animate: false),
             ),
             const SizedBox(width: 8),
           ],

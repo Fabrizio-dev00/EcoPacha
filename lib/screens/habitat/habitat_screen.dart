@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../models/mascot_progress.dart';
+import '../../widgets/lumi_avatar.dart';
 
 /// Pantalla de Lumi y su EcoHábitat evolutivo.
 class HabitatScreen extends StatelessWidget {
@@ -69,14 +70,14 @@ class _HabitatScene extends StatelessWidget {
         children: [
           // Lumi (placeholder; sustituible por animación Lottie en assets/animations).
           Container(
-            height: 72,
-            width: 72,
+            height: 92,
+            width: 92,
+            alignment: Alignment.center,
             decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.flutter_dash,
-                size: 44, color: AppColors.primary),
+            child: const LumiAvatar(size: 80),
           ),
           const SizedBox(height: 8),
           Text(_sceneEmoji(stage), style: const TextStyle(fontSize: 44)),

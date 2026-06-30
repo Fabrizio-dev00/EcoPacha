@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../../widgets/lumi_avatar.dart';
 
 /// Pantalla de bienvenida con el logo y la frase de EcoPacha.
 class SplashScreen extends StatefulWidget {
@@ -41,13 +42,14 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              height: 110,
-              width: 110,
+              height: 124,
+              width: 124,
+              alignment: Alignment.center,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.eco, size: 64, color: AppColors.primary),
+              child: const LumiAvatar(size: 98),
             ),
             const SizedBox(height: 24),
             const Text(
