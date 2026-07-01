@@ -53,9 +53,16 @@ Future<void> main() async {
 ```
 
 ## Paso 5 · Activar servicios en la consola
-- **Authentication** → Sign-in method → habilita **Correo/contraseña** y **Anónimo** (modo invitado).
-- **Firestore Database** → Crear base de datos (modo de prueba para empezar).
-- **Storage** → Crear (para las fotos de residuos).
+- **Authentication** → Sign-in method → habilita **Correo/contraseña** y **Anónimo** (modo invitado). *(Gratis, plan Spark.)*
+- **Firestore Database** → Crear base de datos (modo de prueba para empezar). *(Gratis, plan Spark.)*
+- **Storage** → ⚠️ **OPCIONAL.** Firebase exige el plan **Blaze** (pago por uso) para Storage en
+  proyectos nuevos. EcoPacha **no lo necesita**: las imágenes se usan localmente y no se suben a
+  la nube. **Salta este servicio** salvo que quieras guardar fotos en la nube.
+
+> **Resumen de costos:** con **Authentication + Firestore** (plan Spark) tienes login real y
+> ranking/progreso en la nube **gratis y sin tarjeta**. Solo necesitas **Blaze** si activas
+> **Storage** o el **backend de IA por Cloud Function** (Camino 🅑). Para IA sin Blaze, usa el
+> **Camino 🅐 (TFLite en el dispositivo)**.
 
 Reglas mínimas de Firestore para arrancar (endurecer antes de producción):
 ```
