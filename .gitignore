@@ -44,3 +44,7 @@ app.*.map.json
 # Configuración de Firebase con credenciales (NO commitear)
 google-services.json
 GoogleService-Info.plist
+
+# Herramientas de agente / skills (no forman parte de la app)
+.agents/
+skills-lock.json
