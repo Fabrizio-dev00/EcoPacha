@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'core/config/app_config.dart';
 import 'core/constants/app_strings.dart';
 import 'core/routes/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -11,6 +12,7 @@ import 'providers/leaderboard_provider.dart';
 import 'providers/mascot_provider.dart';
 import 'providers/recycling_provider.dart';
 import 'providers/user_progress_provider.dart';
+import 'services/ai_classifier_service.dart';
 import 'services/auth_service.dart';
 import 'services/chatbot_service.dart';
 import 'services/demo_classifier_service.dart';
@@ -62,7 +64,14 @@ class _EcoPachaAppState extends State<EcoPachaApp> {
               MascotProvider.fromUserProgress(progress),
         ),
         ChangeNotifierProvider<RecyclingProvider>(
-          create: (_) => RecyclingProvider(DemoClassifierService()),
+          create: (_) => RecyclingProvider(
+            AppConfig.useAi
+                ? AiClassifierService(
+                    endpoint: AppConfig.aiBackendUrl,
+                    fallback: DemoClassifierService(),
+                  )
+                : DemoClassifierService(),
+          ),
         ),
         Provider<ChatbotService>(
           create: (_) => LocalKeywordChatbotService(),

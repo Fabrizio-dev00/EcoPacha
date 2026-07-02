@@ -9,6 +9,13 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  # firebase_options.dart lo genera `flutterfire configure` y depende de
+  # firebase_core. Se excluye del analisis hasta integrar Firebase (Fase 8),
+  # para no romper el build mientras tanto. Reactivar al añadir firebase_core.
+  exclude:
+    - lib/firebase_options.dart
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
