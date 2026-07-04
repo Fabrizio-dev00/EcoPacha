@@ -1,19 +1,21 @@
 import 'package:flutter/foundation.dart';
 
 import '../core/constants/app_strings.dart';
-import '../core/constants/impact_constants.dart';
+import '../core/habitat_catalog.dart';
+import '../core/level_service.dart';
 import '../mock/mock_challenges.dart';
 import '../models/app_user.dart';
 import '../models/challenge.dart';
+import '../models/habitat_item.dart';
 import '../models/recycling_record.dart';
 import '../models/recycling_result.dart';
 import '../services/auth_service.dart';
 import '../services/impact_service.dart';
 import '../services/storage_service.dart';
 
-/// Fuente ÚNICA de verdad del progreso del usuario: EcoPuntos, nivel, racha,
-/// impacto, retos e historial de reciclaje. Las pantallas leen de aquí; no
-/// recalculan nada por su cuenta.
+/// Fuente ÚNICA de verdad del progreso del usuario: EcoPuntos (XP), nivel,
+/// racha, impacto, retos, historial y estado del EcoHábitat. Las pantallas leen
+/// de aquí; no recalculan nada por su cuenta.
 class UserProgressProvider extends ChangeNotifier {
   UserProgressProvider(this._storage, this._authService);
 
@@ -26,19 +28,28 @@ class UserProgressProvider extends ChangeNotifier {
   DateTime? _lastActiveDay;
   List<RecyclingRecord> _records = [];
   List<Challenge> _challenges = [];
+  final Map<String, List<double>> _itemPositions = {};
+  int? _pendingLevelUp;
 
   // ---------------- Getters ----------------
   bool get isReady => _userId != null;
   int get ecoPoints => _ecoPoints;
-  int get level => ImpactConstants.levelForPoints(_ecoPoints);
-  double get levelProgress => ImpactConstants.levelProgress(_ecoPoints);
-  int get pointsToNextLevel =>
-      ImpactConstants.pointsPerLevel -
-      ImpactConstants.pointsIntoCurrentLevel(_ecoPoints);
+  int get xp => _ecoPoints;
+  int get level => LevelService.levelForXp(_ecoPoints);
+  double get levelProgress => LevelService.progressInLevel(_ecoPoints);
+  int get pointsToNextLevel => LevelService.xpToNextLevel(_ecoPoints);
+  int get currentLevelXp => LevelService.xpForLevel(level);
+  int get nextLevelXp => isMaxLevel ? _ecoPoints : LevelService.xpForLevel(level + 1);
+  bool get isMaxLevel => level >= LevelService.maxLevel;
   int get streakDays => _streakDays;
   int get totalRecycledItems => _records.length;
   List<Challenge> get challenges => List.unmodifiable(_challenges);
   List<RecyclingRecord> get records => List.unmodifiable(_records);
+
+  List<HabitatItem> get unlockedHabitatItems =>
+      HabitatCatalog.unlockedFor(level);
+  HabitatItem? get nextLockedItem => HabitatCatalog.nextLockedFor(level);
+  int? get pendingLevelUp => _pendingLevelUp;
 
   ImpactSummary get totalImpact => ImpactService.summarize(_records);
 
@@ -47,7 +58,6 @@ class UserProgressProvider extends ChangeNotifier {
         DateTime.now().subtract(const Duration(days: 7)),
       );
 
-  /// Primer reto sin completar (o el primero si todos están completos).
   Challenge? get dailyChallenge {
     if (_challenges.isEmpty) return null;
     return _challenges.firstWhere(
@@ -64,13 +74,20 @@ class UserProgressProvider extends ChangeNotifier {
     return '¡Buen trabajo! Sigue reciclando para que Lumi gane más energía. 🐦';
   }
 
+  /// Posición normalizada [x, y] de un objeto (guardada o la de por defecto).
+  List<double> positionFor(HabitatItem item) =>
+      _itemPositions[item.id] ?? [item.defaultX, item.defaultY];
+
+  Future<void> setItemPosition(String id, double x, double y) async {
+    _itemPositions[id] = [x.clamp(0.0, 1.0), y.clamp(0.0, 1.0)];
+    await _persist();
+    notifyListeners();
+  }
+
   // ---------------- Sincronización con la sesión ----------------
-  /// Conecta el progreso con el usuario autenticado (usado por el ProxyProvider).
   void syncWithAuth(AppUser? user, bool isAuthenticated) {
     if (isAuthenticated && user != null) {
-      if (user.id != _userId) {
-        loadForUser(user);
-      }
+      if (user.id != _userId) loadForUser(user);
     } else if (_userId != null) {
       _clear();
     }
@@ -85,18 +102,31 @@ class UserProgressProvider extends ChangeNotifier {
       final lastRaw = json['lastActiveDay'] as String?;
       _lastActiveDay = lastRaw != null ? DateTime.tryParse(lastRaw) : null;
       _records = ((json['records'] as List?) ?? [])
-          .map((e) => RecyclingRecord.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              RecyclingRecord.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
       _challenges = ((json['challenges'] as List?) ?? [])
           .map((e) => Challenge.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
       if (_challenges.isEmpty) _challenges = _seedChallenges();
+      _itemPositions.clear();
+      final positions = (json['itemPositions'] as Map?) ?? const {};
+      positions.forEach((key, value) {
+        if (value is List && value.length == 2) {
+          _itemPositions[key as String] = [
+            (value[0] as num).toDouble(),
+            (value[1] as num).toDouble(),
+          ];
+        }
+      });
     } else {
       _ecoPoints = user.ecoPoints;
       _streakDays = user.streakDays;
       _records = [];
       _challenges = _seedChallenges();
+      _itemPositions.clear();
     }
+    _pendingLevelUp = null;
     _applyDailyActivity();
     await _persist();
     notifyListeners();
@@ -106,6 +136,7 @@ class UserProgressProvider extends ChangeNotifier {
   /// Registra un reciclaje confirmado y actualiza puntos, impacto, retos y racha.
   Future<void> addRecyclingResult(RecyclingResult result,
       {String? imageUrl}) async {
+    final oldLevel = level;
     final record = RecyclingRecord(
       id: 'rec_${DateTime.now().microsecondsSinceEpoch}',
       userId: _userId ?? 'unknown',
@@ -117,18 +148,32 @@ class UserProgressProvider extends ChangeNotifier {
     _ecoPoints += result.ecoPointsAwarded;
     _advanceChallenges(ChallengeType.escanear);
     _applyDailyActivity();
+    _checkLevelUp(oldLevel);
     await _persistAndSync();
     notifyListeners();
   }
 
   /// Avanza un reto por su tipo (p. ej. aprender consejos con EcoBot).
   Future<void> advanceChallenge(ChallengeType type, {int amount = 1}) async {
+    final oldLevel = level;
     _advanceChallenges(type, amount: amount);
+    _checkLevelUp(oldLevel);
     await _persistAndSync();
     notifyListeners();
   }
 
+  /// Consume el evento de subida de nivel tras mostrar la celebración.
+  void consumeLevelUp() {
+    _pendingLevelUp = null;
+    notifyListeners();
+  }
+
   // ---------------- Lógica interna ----------------
+  void _checkLevelUp(int oldLevel) {
+    final newLevel = level;
+    if (newLevel > oldLevel) _pendingLevelUp = newLevel;
+  }
+
   List<Challenge> _seedChallenges() =>
       mockDailyChallenges.map((c) => c.copyWith()).toList();
 
@@ -172,6 +217,7 @@ class UserProgressProvider extends ChangeNotifier {
       'lastActiveDay': _lastActiveDay?.toIso8601String(),
       'records': _records.map((r) => r.toJson()).toList(),
       'challenges': _challenges.map((c) => c.toJson()).toList(),
+      'itemPositions': _itemPositions,
     });
   }
 
@@ -196,6 +242,8 @@ class UserProgressProvider extends ChangeNotifier {
     _lastActiveDay = null;
     _records = [];
     _challenges = [];
+    _itemPositions.clear();
+    _pendingLevelUp = null;
     notifyListeners();
   }
 }

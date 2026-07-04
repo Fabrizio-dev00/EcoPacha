@@ -1,4 +1,5 @@
 import '../../models/recycling_result.dart';
+import '../level_service.dart';
 
 /// Valores de referencia (simulados) del impacto ambiental por categoría.
 /// Centralizados para ajustarlos fácilmente. NO son cifras oficiales.
@@ -40,14 +41,9 @@ class ImpactConstants {
         ecoPoints: 5, co2SavedKg: 0.0, waterSavedLiters: 0.0, weightKg: 0.0),
   };
 
-  /// Puntos necesarios para subir un nivel (curva lineal sencilla).
-  static const int pointsPerLevel = 100;
+  /// Nivel y progreso delegados a [LevelService] (curva de XP única).
+  static int levelForPoints(int points) => LevelService.levelForXp(points);
 
-  static int levelForPoints(int points) => (points ~/ pointsPerLevel) + 1;
-
-  static int pointsIntoCurrentLevel(int points) => points % pointsPerLevel;
-
-  /// Progreso (0.0 - 1.0) dentro del nivel actual.
   static double levelProgress(int points) =>
-      pointsIntoCurrentLevel(points) / pointsPerLevel;
+      LevelService.progressInLevel(points);
 }
